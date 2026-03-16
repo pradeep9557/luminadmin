@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getPosts, deletePost, deleteComment } from '../api';
+import { getPosts, deletePost, deleteComment, updatePost } from '../api';
 
 export default function Posts() {
   const [posts, setPosts] = useState([]);
@@ -9,6 +9,10 @@ export default function Posts() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ title: '', body: '', author: '' });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -28,11 +32,46 @@ export default function Posts() {
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
+  const handleSelect = (post) => {
+    setSelected(post);
+    setEditing(false);
+    setMsg('');
+  };
+
+  const startEdit = (post) => {
+    setSelected(post);
+    setEditing(true);
+    setForm({
+      title: post.title || '',
+      body: post.body || '',
+      author: post.author || '',
+    });
+    setMsg('');
+  };
+
+  const handleSave = async () => {
+    if (!selected) return;
+    setSaving(true);
+    setMsg('');
+    try {
+      const updated = await updatePost(selected._id, form);
+      setSelected({ ...selected, ...updated });
+      setEditing(false);
+      setMsg('Saved successfully!');
+      fetchPosts();
+      setTimeout(() => setMsg(''), 2000);
+    } catch (e) {
+      setMsg(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!confirm('Delete this post and all its comments?')) return;
     try {
       await deletePost(id);
-      if (selected?._id === id) setSelected(null);
+      if (selected?._id === id) { setSelected(null); setEditing(false); }
       fetchPosts();
     } catch (e) {
       console.error(e);
@@ -43,7 +82,6 @@ export default function Posts() {
     if (!confirm('Delete this comment?')) return;
     try {
       await deleteComment(postId, commentId);
-      // Refresh selected post
       setSelected((prev) => ({
         ...prev,
         comments: prev.comments.filter((c) => c._id !== commentId),
@@ -82,7 +120,7 @@ export default function Posts() {
           <div className="card-list">
             {posts.map((post) => (
               <div key={post._id} className={`card ${selected?._id === post._id ? 'active' : ''}`}>
-                <div className="card-body" onClick={() => setSelected(post)}>
+                <div className="card-body" onClick={() => handleSelect(post)}>
                   <div className="card-header-row">
                     <strong>{post.title}</strong>
                     <span className="badge badge-blue">{post.likes} likes</span>
@@ -98,7 +136,7 @@ export default function Posts() {
                   </div>
                 </div>
                 <div className="card-actions">
-                  <button className="btn btn-sm" onClick={() => setSelected(post)}>View</button>
+                  <button className="btn btn-sm" onClick={() => startEdit(post)}>Edit</button>
                   <button className="btn btn-sm btn-danger" onClick={() => handleDelete(post._id)}>Delete</button>
                 </div>
               </div>
@@ -107,9 +145,51 @@ export default function Posts() {
           </div>
 
           <div className="form-panel">
-            {selected ? (
+            {selected && editing ? (
               <>
-                <h3>{selected.title}</h3>
+                <h3>Edit Post</h3>
+                <div className="detail-meta">
+                  <span className="badge badge-purple">{selected.userId?.fullName || 'Unknown'}</span>
+                  <span className="badge badge-blue">{selected.likes} likes</span>
+                </div>
+
+                {msg && <div className={`alert ${msg.includes('success') ? 'alert-success' : 'alert-error'}`}>{msg}</div>}
+
+                <label className="field-label">Title</label>
+                <input
+                  className="input"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+
+                <label className="field-label">Author</label>
+                <input
+                  className="input"
+                  value={form.author}
+                  onChange={(e) => setForm({ ...form, author: e.target.value })}
+                />
+
+                <label className="field-label" style={{ marginTop: '0.75rem' }}>Body</label>
+                <textarea
+                  className="input textarea"
+                  rows={10}
+                  value={form.body}
+                  onChange={(e) => setForm({ ...form, body: e.target.value })}
+                />
+
+                <div className="modal-actions">
+                  <button className="btn" onClick={() => { setEditing(false); setMsg(''); }}>Cancel</button>
+                  <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </>
+            ) : selected ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <h3>{selected.title}</h3>
+                  <button className="btn btn-sm" onClick={() => startEdit(selected)}>Edit</button>
+                </div>
                 <div className="detail-meta">
                   <span className="badge badge-purple">{selected.author || selected.userId?.fullName || 'Unknown'}</span>
                   <span className="badge badge-blue">{selected.likes} likes</span>
@@ -117,6 +197,7 @@ export default function Posts() {
                 <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#5a5a80' }}>
                   Posted: {new Date(selected.createdAt).toLocaleString()}
                 </div>
+                {msg && <div className="alert alert-success">{msg}</div>}
                 <hr style={{ border: 'none', borderTop: '1px solid #2a2a45', margin: '1rem 0' }} />
                 <div className="journal-body">{selected.body}</div>
 

@@ -105,6 +105,8 @@ export const getPosts = (params) => {
   return request(`/admin/posts?${q}`);
 };
 export const getPost = (id) => request(`/admin/posts/${id}`);
+export const updatePost = (id, data) =>
+  request(`/admin/posts/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deletePost = (id) =>
   request(`/admin/posts/${id}`, { method: 'DELETE' });
 export const deleteComment = (postId, commentId) =>
