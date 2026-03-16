@@ -94,6 +94,8 @@ export const getJournals = (params) => {
   return request(`/admin/journals?${q}`);
 };
 export const getJournal = (id) => request(`/admin/journals/${id}`);
+export const updateJournal = (id, data) =>
+  request(`/admin/journals/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteJournal = (id) =>
   request(`/admin/journals/${id}`, { method: 'DELETE' });
 

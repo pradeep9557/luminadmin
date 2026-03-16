@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getJournals, deleteJournal } from '../api';
+import { getJournals, deleteJournal, updateJournal } from '../api';
 
 export default function Journals() {
   const [entries, setEntries] = useState([]);
@@ -9,6 +9,10 @@ export default function Journals() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ title: '', body: '' });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -28,11 +32,42 @@ export default function Journals() {
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
+  const handleSelect = (entry) => {
+    setSelected(entry);
+    setEditing(false);
+    setMsg('');
+  };
+
+  const startEdit = (entry) => {
+    setSelected(entry);
+    setEditing(true);
+    setForm({ title: entry.title || '', body: entry.body || '' });
+    setMsg('');
+  };
+
+  const handleSave = async () => {
+    if (!selected) return;
+    setSaving(true);
+    setMsg('');
+    try {
+      const updated = await updateJournal(selected._id, form);
+      setSelected(updated);
+      setEditing(false);
+      setMsg('Saved successfully!');
+      fetchEntries();
+      setTimeout(() => setMsg(''), 2000);
+    } catch (e) {
+      setMsg(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!confirm('Delete this journal entry?')) return;
     try {
       await deleteJournal(id);
-      if (selected?._id === id) setSelected(null);
+      if (selected?._id === id) { setSelected(null); setEditing(false); }
       fetchEntries();
     } catch (e) {
       console.error(e);
@@ -67,7 +102,7 @@ export default function Journals() {
           <div className="card-list">
             {entries.map((entry) => (
               <div key={entry._id} className={`card ${selected?._id === entry._id ? 'active' : ''}`}>
-                <div className="card-body" onClick={() => setSelected(entry)}>
+                <div className="card-body" onClick={() => handleSelect(entry)}>
                   <div className="card-header-row">
                     <strong>{entry.title || 'Untitled'}</strong>
                   </div>
@@ -82,7 +117,7 @@ export default function Journals() {
                   </div>
                 </div>
                 <div className="card-actions">
-                  <button className="btn btn-sm" onClick={() => setSelected(entry)}>View</button>
+                  <button className="btn btn-sm" onClick={() => startEdit(entry)}>Edit</button>
                   <button className="btn btn-sm btn-danger" onClick={() => handleDelete(entry._id)}>Delete</button>
                 </div>
               </div>
@@ -91,9 +126,44 @@ export default function Journals() {
           </div>
 
           <div className="form-panel">
-            {selected ? (
+            {selected && editing ? (
               <>
-                <h3>{selected.title || 'Untitled'}</h3>
+                <h3>Edit Journal Entry</h3>
+                <div className="detail-meta">
+                  <span className="badge badge-purple">{selected.userId?.fullName || 'Unknown'}</span>
+                  <small style={{ color: '#7878a0' }}>{selected.userId?.email}</small>
+                </div>
+
+                {msg && <div className={`alert ${msg.includes('success') ? 'alert-success' : 'alert-error'}`}>{msg}</div>}
+
+                <label className="field-label">Title</label>
+                <input
+                  className="input"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+
+                <label className="field-label" style={{ marginTop: '0.75rem' }}>Body</label>
+                <textarea
+                  className="input textarea"
+                  rows={14}
+                  value={form.body}
+                  onChange={(e) => setForm({ ...form, body: e.target.value })}
+                />
+
+                <div className="modal-actions">
+                  <button className="btn" onClick={() => { setEditing(false); setMsg(''); }}>Cancel</button>
+                  <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </>
+            ) : selected ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <h3>{selected.title || 'Untitled'}</h3>
+                  <button className="btn btn-sm" onClick={() => startEdit(selected)}>Edit</button>
+                </div>
                 <div className="detail-meta">
                   <span className="badge badge-purple">{selected.userId?.fullName || 'Unknown'}</span>
                   <small style={{ color: '#7878a0' }}>{selected.userId?.email}</small>
@@ -101,6 +171,7 @@ export default function Journals() {
                 <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#5a5a80' }}>
                   Created: {new Date(selected.createdAt).toLocaleString()}
                 </div>
+                {msg && <div className="alert alert-success">{msg}</div>}
                 <hr style={{ border: 'none', borderTop: '1px solid #2a2a45', margin: '1rem 0' }} />
                 <div className="journal-body">{selected.body}</div>
               </>
