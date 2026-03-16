@@ -29,6 +29,8 @@ export default function Dashboard() {
         <StatCard label="Active Users" value={stats.activeUsers} accent="green" />
         <StatCard label="Disabled Users" value={stats.disabledUsers} accent="red" />
         <StatCard label="New This Week" value={stats.newUsersThisWeek} accent="blue" />
+        <StatCard label="Posts" value={stats.totalPosts} accent="blue" />
+        <StatCard label="Journals" value={stats.totalJournals} />
         <StatCard label="FAQs" value={stats.totalFaqs} />
         <StatCard label="Herbs" value={stats.totalHerbs} />
         <StatCard label="Crystals" value={stats.totalCrystals} />

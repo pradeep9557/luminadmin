@@ -230,6 +230,23 @@ select.input { cursor: pointer; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; }
 
+/* ── Journal / Post detail ───────────────────────────── */
+.detail-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+.journal-body { font-size: 0.9rem; line-height: 1.7; color: #c8c8e0; white-space: pre-wrap; word-break: break-word; }
+
+/* ── Comments ────────────────────────────────────────── */
+.comments-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.comment-card {
+  background: #1e1e38;
+  border: 1px solid #2a2a45;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+.comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; }
+.comment-header strong { font-size: 0.85rem; color: #c4b5fd; }
+.comment-header small { font-size: 0.75rem; color: #5a5a80; }
+.comment-text { font-size: 0.85rem; color: #b0b0cc; line-height: 1.5; }
+
 /* ── Loading ─────────────────────────────────────────── */
 .loading { text-align: center; padding: 3rem; color: #7878a0; }
 

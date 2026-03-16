@@ -6,6 +6,8 @@ import Users from './pages/Users';
 import Pages from './pages/Pages';
 import Faqs from './pages/Faqs';
 import SpiritualElements from './pages/SpiritualElements';
+import Journals from './pages/Journals';
+import Posts from './pages/Posts';
 
 function ProtectedRoute({ children }) {
   return isLoggedIn() ? children : <Navigate to="/login" replace />;
@@ -22,6 +24,8 @@ function Sidebar() {
   const links = [
     { to: '/', label: 'Dashboard', icon: '\u2302' },
     { to: '/users', label: 'Users', icon: '\u263A' },
+    { to: '/posts', label: 'Posts', icon: '\u2709' },
+    { to: '/journals', label: 'Journals', icon: '\u270E' },
     { to: '/pages', label: 'Pages', icon: '\u2630' },
     { to: '/faqs', label: 'FAQs', icon: '?' },
     { to: '/spiritual', label: 'Spiritual Elements', icon: '\u2726' },
@@ -62,6 +66,8 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/users" element={<Users />} />
+                  <Route path="/posts" element={<Posts />} />
+                  <Route path="/journals" element={<Journals />} />
                   <Route path="/pages" element={<Pages />} />
                   <Route path="/faqs" element={<Faqs />} />
                   <Route path="/spiritual" element={<SpiritualElements />} />

@@ -87,3 +87,23 @@ export const updateSpiritualElement = (id, data) =>
   request(`/admin/spiritual-elements/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteSpiritualElement = (id) =>
   request(`/admin/spiritual-elements/${id}`, { method: 'DELETE' });
+
+// Journal Entries
+export const getJournals = (params) => {
+  const q = new URLSearchParams(params).toString();
+  return request(`/admin/journals?${q}`);
+};
+export const getJournal = (id) => request(`/admin/journals/${id}`);
+export const deleteJournal = (id) =>
+  request(`/admin/journals/${id}`, { method: 'DELETE' });
+
+// Posts
+export const getPosts = (params) => {
+  const q = new URLSearchParams(params).toString();
+  return request(`/admin/posts?${q}`);
+};
+export const getPost = (id) => request(`/admin/posts/${id}`);
+export const deletePost = (id) =>
+  request(`/admin/posts/${id}`, { method: 'DELETE' });
+export const deleteComment = (postId, commentId) =>
+  request(`/admin/posts/${postId}/comments/${commentId}`, { method: 'DELETE' });
