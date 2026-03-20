@@ -190,12 +190,6 @@ export function SpiritualElements() {
               >
                 <Plus className="size-4" /> Add Product
               </button>
-              <button
-                onClick={openCreate}
-                className="flex items-center gap-2 rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm text-[#6b6b88] hover:bg-[#f5f6fa]"
-              >
-                <Plus className="size-4" /> Add Element
-              </button>
             </div>
           </div>
           <div className="mt-4 flex gap-3">

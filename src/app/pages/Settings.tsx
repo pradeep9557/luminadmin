@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, Bell, Lock, Globe, Mail, Palette, CreditCard, Eye, EyeOff, Copy, Check, X, ChevronDown, ChevronUp, Loader2, ExternalLink, Plus, Minus, Filter, Calendar } from "lucide-react";
+import { Save, Bell, Lock, Globe, Mail, Palette, CreditCard, Eye, EyeOff, Copy, Check, X, ChevronDown, ChevronUp, Loader2, ExternalLink, Plus, Minus, Filter, Calendar, Upload } from "lucide-react";
 import { useAppearance } from "../contexts/AppearanceContext";
 import {
   getGeneralSettings,
@@ -904,21 +904,75 @@ export function Settings() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#090838]">Logo URL</label>
-                  <input
-                    type="text"
-                    value={appearanceForm.logo}
-                    onChange={(e) => setAppearanceForm({ ...appearanceForm, logo: e.target.value })}
-                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={appearanceForm.logo}
+                      onChange={(e) => setAppearanceForm({ ...appearanceForm, logo: e.target.value })}
+                      placeholder="Enter URL or browse to select a file"
+                      className="flex-1 rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                    />
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#0048ff] px-4 py-2 text-sm font-medium text-[#0048ff] hover:bg-blue-50 transition-colors">
+                      <Upload className="size-4" />
+                      Browse
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setAppearanceForm({ ...appearanceForm, logo: reader.result as string });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {appearanceForm.logo && (
+                    <div className="mt-2">
+                      <img src={appearanceForm.logo} alt="Logo preview" className="h-12 rounded border border-[#e1e1e7] object-contain p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} onLoad={(e) => { (e.target as HTMLImageElement).style.display = 'block'; }} />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#090838]">Favicon URL</label>
-                  <input
-                    type="text"
-                    value={appearanceForm.favicon}
-                    onChange={(e) => setAppearanceForm({ ...appearanceForm, favicon: e.target.value })}
-                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={appearanceForm.favicon}
+                      onChange={(e) => setAppearanceForm({ ...appearanceForm, favicon: e.target.value })}
+                      placeholder="Enter URL or browse to select a file"
+                      className="flex-1 rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                    />
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#0048ff] px-4 py-2 text-sm font-medium text-[#0048ff] hover:bg-blue-50 transition-colors">
+                      <Upload className="size-4" />
+                      Browse
+                      <input
+                        type="file"
+                        accept="image/*,.ico"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setAppearanceForm({ ...appearanceForm, favicon: reader.result as string });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {appearanceForm.favicon && (
+                    <div className="mt-2">
+                      <img src={appearanceForm.favicon} alt="Favicon preview" className="h-8 rounded border border-[#e1e1e7] object-contain p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} onLoad={(e) => { (e.target as HTMLImageElement).style.display = 'block'; }} />
+                    </div>
+                  )}
                 </div>
                 <label className="flex items-center justify-between">
                   <span className="text-sm font-medium text-[#090838]">Dark Mode</span>
