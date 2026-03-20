@@ -10,6 +10,7 @@ import {
   getSecuritySettings,
   updatePassword,
   toggle2FA,
+  getLoginHistory,
   getAppearanceSettings,
   updateAppearanceSettings,
   getPaymentGateways,
@@ -180,6 +181,10 @@ export function Settings() {
             : response.security ? response.security
             : response;
           setSecuritySettings(prev => ({ ...prev, ...data, currentPassword: "", newPassword: "", confirmPassword: "" }));
+          try {
+            const history = await getLoginHistory();
+            setLoginHistory(Array.isArray(history) ? history : []);
+          } catch { /* login history optional */ }
         } else if (activeTab === "email") {
           const response = await getEmailSettings();
           const data = Array.isArray(response) ? response[0]
@@ -300,8 +305,7 @@ export function Settings() {
     setLoading(true);
     setError(null);
     try {
-      // Call updateSecuritySettings or similar if available
-      await updatePassword({ currentPassword: "", newPassword: "" }); // Placeholder
+      await toggle2FA({ enabled: securitySettings.twoFactorEnabled });
       showSuccessMessage("Security settings saved!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save security settings");

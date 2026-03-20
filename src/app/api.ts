@@ -208,9 +208,9 @@ export const deleteNotification = (id: string) =>
   request(`/admin/notifications/${id}`, { method: 'DELETE' });
 export const bulkDeleteNotifications = (ids: string[]) =>
   request('/admin/notifications/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) });
-export const getNotificationSettings = () => request('/admin/notifications/settings');
+export const getNotificationSettings = () => request('/admin/settings/notifications');
 export const updateNotificationSettings = (data: any) =>
-  request('/admin/notifications/settings', { method: 'PUT', body: JSON.stringify(data) });
+  request('/admin/settings/notifications', { method: 'PUT', body: JSON.stringify(data) });
 
 // ─── Settings ────────────────────────────────────────────────────
 export const getGeneralSettings = () => request('/admin/settings/general');
