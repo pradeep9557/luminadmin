@@ -15,7 +15,12 @@ import {
   X,
   Check,
   AlertCircle,
-  LogOut
+  LogOut,
+  MessageSquare,
+  BookOpen,
+  FileText,
+  HelpCircle,
+  Gem
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAppearance } from "../contexts/AppearanceContext";
@@ -66,6 +71,11 @@ export function RootLayout() {
     { name: "Services", href: "/services", icon: Sparkles },
     { name: "Subscriptions", href: "/subscriptions", icon: CreditCard },
     { name: "Products", href: "/products", icon: ShoppingBag },
+    { name: "Posts", href: "/posts", icon: MessageSquare },
+    { name: "Journals", href: "/journals", icon: BookOpen },
+    { name: "Pages", href: "/pages", icon: FileText },
+    { name: "FAQs", href: "/faqs", icon: HelpCircle },
+    { name: "Spiritual Elements", href: "/spiritual-elements", icon: Gem },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
