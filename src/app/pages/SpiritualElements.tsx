@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Search, Plus, Edit, Trash2, X, Gem, Leaf, Filter } from "lucide-react";
-import { getSpiritualElements, getSpiritualElement, createSpiritualElement, updateSpiritualElement, deleteSpiritualElement } from "../api";
+import { Search, Plus, Edit, Trash2, X, Gem, Leaf, Package, Upload } from "lucide-react";
+import { getSpiritualElements, getSpiritualElement, createSpiritualElement, updateSpiritualElement, deleteSpiritualElement, createProduct, getProductCategories } from "../api";
 
 interface SpiritualElement {
   _id: string;
@@ -21,10 +21,24 @@ export function SpiritualElements() {
   const [error, setError] = useState<string | null>(null);
   const [editModal, setEditModal] = useState<SpiritualElement | null>(null);
   const [createModal, setCreateModal] = useState(false);
+  const [addProductModal, setAddProductModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState<SpiritualElement | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
 
   const emptyForm = { name: "", type: "herb" as "herb" | "crystal", description: "", tag: "", iconUrl: "", order: 0 };
   const [formData, setFormData] = useState(emptyForm);
+
+  // Product form state (matching Products page form)
+  const [productFormData, setProductFormData] = useState({
+    name: "",
+    category: "Crystals",
+    price: "",
+    stock: "",
+    description: "",
+    image: "",
+    sku: "",
+  });
 
   const fetchElements = async () => {
     setLoading(true);
@@ -36,13 +50,27 @@ export function SpiritualElements() {
       const res = await getSpiritualElements(params);
       setElements(Array.isArray(res) ? res : []);
     } catch {
-      setError("Failed to fetch spiritual elements");
+      setError("Failed to fetch products");
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await getProductCategories();
+      const cats = Array.isArray(response) ? response
+        : response.data ? response.data
+        : response.categories ? response.categories
+        : [];
+      setCategories(cats);
+    } catch {
+      setCategories(["Crystals", "Tarot", "Meditation", "Books", "Aromatherapy", "Decor"]);
+    }
+  };
+
   useEffect(() => { fetchElements(); }, [typeFilter]);
+  useEffect(() => { fetchCategories(); }, []);
 
   useEffect(() => {
     const t = setTimeout(() => fetchElements(), 400);
@@ -54,7 +82,7 @@ export function SpiritualElements() {
       const item = await getSpiritualElement(id);
       setSelected(item);
     } catch {
-      setError("Failed to load element details");
+      setError("Failed to load product details");
     }
   };
 
@@ -106,6 +134,42 @@ export function SpiritualElements() {
     }
   };
 
+  const handleAddProduct = async () => {
+    if (!productFormData.name || !productFormData.price || !productFormData.stock || !productFormData.description) {
+      setError("Please fill in all required fields");
+      return;
+    }
+    setLoading(true);
+    try {
+      await createProduct({
+        name: productFormData.name,
+        description: productFormData.description,
+        category: productFormData.category,
+        price: parseFloat(productFormData.price),
+        stock: parseInt(productFormData.stock),
+        images: [productFormData.image || "https://images.unsplash.com/photo-1532968961962-8a0cb3a2d4f5?w=400&h=400&fit=crop"],
+        status: "active",
+        sku: productFormData.sku || "",
+      });
+      setAddProductModal(false);
+      resetProductForm();
+      showSuccess(`"${productFormData.name}" has been added successfully!`);
+    } catch {
+      setError("Failed to add product. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetProductForm = () => {
+    setProductFormData({ name: "", category: "Crystals", price: "", stock: "", description: "", image: "", sku: "" });
+  };
+
+  const showSuccess = (message: string) => {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(""), 3000);
+  };
+
   const TypeIcon = ({ type }: { type: string }) =>
     type === "crystal" ? <Gem className="size-4 text-purple-500" /> : <Leaf className="size-4 text-green-500" />;
 
@@ -116,22 +180,30 @@ export function SpiritualElements() {
         <div className="border-b border-[#e1e1e7] p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#090838]">Spiritual Elements</h1>
-              <p className="mt-1 text-sm text-[#6b6b88]">Manage herbs and crystals</p>
+              <h1 className="text-2xl font-bold text-[#090838]">Products</h1>
+              <p className="mt-1 text-sm text-[#6b6b88]">Manage products, herbs and crystals</p>
             </div>
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 rounded-lg bg-[#0048ff] px-4 py-2 text-sm text-white hover:bg-[#0038cc]"
-            >
-              <Plus className="size-4" /> Add Element
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAddProductModal(true)}
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#0048ff] to-[#0036cc] px-4 py-2 text-sm text-white hover:from-[#0036cc] hover:to-[#0024aa]"
+              >
+                <Plus className="size-4" /> Add Product
+              </button>
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-2 rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm text-[#6b6b88] hover:bg-[#f5f6fa]"
+              >
+                <Plus className="size-4" /> Add Element
+              </button>
+            </div>
           </div>
           <div className="mt-4 flex gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#6b6b88]" />
               <input
                 type="text"
-                placeholder="Search elements..."
+                placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-lg border border-[#e1e1e7] py-2 pl-10 pr-4 text-sm focus:border-[#0048ff] focus:outline-none"
@@ -161,7 +233,7 @@ export function SpiritualElements() {
           {loading ? (
             <div className="flex items-center justify-center py-20 text-[#6b6b88]">Loading...</div>
           ) : elements.length === 0 ? (
-            <div className="flex items-center justify-center py-20 text-[#6b6b88]">No elements found</div>
+            <div className="flex items-center justify-center py-20 text-[#6b6b88]">No products found</div>
           ) : (
             <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
               {elements.map((el) => (
@@ -214,7 +286,7 @@ export function SpiritualElements() {
       {selected && (
         <div className="flex w-1/2 flex-col bg-white">
           <div className="flex items-center justify-between border-b border-[#e1e1e7] p-6">
-            <h2 className="text-lg font-semibold text-[#090838]">Element Details</h2>
+            <h2 className="text-lg font-semibold text-[#090838]">Product Details</h2>
             <button onClick={() => setSelected(null)} className="rounded p-1 hover:bg-[#f5f6fa]">
               <X className="size-5 text-[#6b6b88]" />
             </button>
@@ -251,7 +323,144 @@ export function SpiritualElements() {
         </div>
       )}
 
-      {/* Create / Edit Modal */}
+      {/* Add Product Modal (same form as Products page) */}
+      {addProductModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
+            <div className="border-b border-[#e1e1e7] p-6">
+              <h2 className="text-xl font-semibold text-[#090838]">Add New Product</h2>
+              <p className="text-sm text-[#6b6b88]">Create a new product listing</p>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[#090838]">
+                    Product Image URL
+                  </label>
+                  <input
+                    type="text"
+                    value={productFormData.image}
+                    onChange={(e) => setProductFormData({ ...productFormData, image: e.target.value })}
+                    placeholder="https://images.unsplash.com/photo-example.jpg"
+                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                  />
+                  <p className="mt-1 text-xs text-[#6b6b88]">Leave empty to use default image</p>
+                  {productFormData.image && (
+                    <div className="mt-3 overflow-hidden rounded-lg border border-[#e1e1e7]">
+                      <img
+                        src={productFormData.image}
+                        alt="Preview"
+                        className="h-48 w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1532968961962-8a0cb3a2d4f5?w=400&h=400&fit=crop";
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[#090838]">
+                    Product Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={productFormData.name}
+                    onChange={(e) => setProductFormData({ ...productFormData, name: e.target.value })}
+                    placeholder="e.g., Crystal Healing Set"
+                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[#090838]">Category *</label>
+                    <select
+                      value={productFormData.category}
+                      onChange={(e) => setProductFormData({ ...productFormData, category: e.target.value })}
+                      className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[#090838]">Price *</label>
+                    <input
+                      type="number"
+                      value={productFormData.price}
+                      onChange={(e) => setProductFormData({ ...productFormData, price: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[#090838]">
+                    Stock Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    value={productFormData.stock}
+                    onChange={(e) => setProductFormData({ ...productFormData, stock: e.target.value })}
+                    placeholder="0"
+                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[#090838]">
+                    SKU
+                  </label>
+                  <input
+                    type="text"
+                    value={productFormData.sku}
+                    onChange={(e) => setProductFormData({ ...productFormData, sku: e.target.value })}
+                    placeholder="e.g., SKU123"
+                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[#090838]">
+                    Description *
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={productFormData.description}
+                    onChange={(e) => setProductFormData({ ...productFormData, description: e.target.value })}
+                    placeholder="Describe the product..."
+                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-[#e1e1e7] p-6">
+              <button
+                onClick={() => { setAddProductModal(false); resetProductForm(); }}
+                className="rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm font-medium text-[#6b6b88] hover:bg-[#f5f6fa]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddProduct}
+                disabled={loading}
+                className="rounded-lg bg-gradient-to-r from-[#0048ff] to-[#0036cc] px-4 py-2 text-sm font-medium text-white hover:from-[#0036cc] hover:to-[#0024aa] disabled:opacity-50"
+              >
+                {loading ? "Adding..." : "Add Product"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create / Edit Element Modal */}
       {(createModal || editModal) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-lg rounded-xl bg-white p-6">
@@ -306,13 +515,20 @@ export function SpiritualElements() {
       {deleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-sm rounded-xl bg-white p-6">
-            <h3 className="text-lg font-semibold text-[#090838]">Delete Element</h3>
+            <h3 className="text-lg font-semibold text-[#090838]">Delete Product</h3>
             <p className="mt-2 text-sm text-[#6b6b88]">Are you sure you want to delete "{deleteModal.name}"? This action cannot be undone.</p>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setDeleteModal(null)} className="rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm hover:bg-[#f5f6fa]">Cancel</button>
               <button onClick={handleDelete} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">Delete</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Success Message Toast */}
+      {successMessage && (
+        <div className="fixed bottom-8 right-8 z-50 rounded-lg border border-green-200 bg-green-50 px-6 py-4 shadow-lg">
+          <p className="text-sm font-medium text-green-900">{successMessage}</p>
         </div>
       )}
     </div>

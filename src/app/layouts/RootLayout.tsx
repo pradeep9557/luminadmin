@@ -68,15 +68,12 @@ export function RootLayout() {
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Users", href: "/users", icon: Users },
     { name: "Orders", href: "/orders", icon: Package },
-    { name: "Services", href: "/services", icon: Sparkles },
     { name: "Subscriptions", href: "/subscriptions", icon: CreditCard },
-    { name: "Products", href: "/products", icon: ShoppingBag },
+    { name: "Products", href: "/spiritual-elements", icon: ShoppingBag },
     { name: "Posts", href: "/posts", icon: MessageSquare },
     { name: "Journals", href: "/journals", icon: BookOpen },
     { name: "Pages", href: "/pages", icon: FileText },
     { name: "FAQs", href: "/faqs", icon: HelpCircle },
-    { name: "Spiritual Elements", href: "/spiritual-elements", icon: Gem },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
