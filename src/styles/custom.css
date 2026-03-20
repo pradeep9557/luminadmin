@@ -1,0 +1,47 @@
+/* Custom utility classes that use appearance settings */
+.btn-primary {
+  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.text-primary {
+  color: var(--primary-color);
+}
+
+.bg-primary {
+  background-color: var(--primary-color);
+}
+
+.bg-secondary {
+  background-color: var(--secondary-color);
+}
+
+.border-primary {
+  border-color: var(--primary-color);
+}
+
+/* Make some existing styles responsive to appearance settings */
+.dark-mode {
+  color-scheme: dark;
+}
+
+.dark-mode body {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.dark-mode .bg-white {
+  background-color: #2a2a2a !important;
+}
+
+.dark-mode .text-\\[\\#090838\\],
+.dark-mode .text-\\[\\#6b6b88\\] {
+  color: #e0e0e0 !important;
+}
+
+.dark-mode .border-\\[\\#e1e1e7\\] {
+  border-color: #404040 !important;
+}
