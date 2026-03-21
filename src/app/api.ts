@@ -136,26 +136,19 @@ export const duplicateService = (id: string) =>
 export const getServiceBookings = (id: string) => request(`/admin/services/${id}/bookings`);
 export const getServiceRevenue = (id: string) => request(`/admin/services/${id}/revenue`);
 
-// ─── Products ────────────────────────────────────────────────────
+// ─── Products (uses SpiritualElements collection) ────────────────
 export const getProducts = (params?: Record<string, string>) => {
   const q = params ? new URLSearchParams(params).toString() : '';
-  return request(`/admin/products${q ? `?${q}` : ''}`);
+  return request(`/admin/spiritual-elements${q ? `?${q}` : ''}`);
 };
-export const getProduct = (id: string) => request(`/admin/products/${id}`);
+export const getProduct = (id: string) => request(`/admin/spiritual-elements/${id}`);
 export const createProduct = (data: any) =>
-  request('/admin/products', { method: 'POST', body: JSON.stringify(data) });
+  request('/admin/spiritual-elements', { method: 'POST', body: JSON.stringify(data) });
 export const updateProduct = (id: string, data: any) =>
-  request(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  request(`/admin/spiritual-elements/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteProduct = (id: string) =>
-  request(`/admin/products/${id}`, { method: 'DELETE' });
-export const updateProductStock = (id: string, stock: number, operation = 'set') =>
-  request(`/admin/products/${id}/stock`, { method: 'PATCH', body: JSON.stringify({ stock, operation }) });
-export const updateProductStatus = (id: string, status: string) =>
-  request(`/admin/products/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
-export const getProductCategories = () => request('/admin/products/categories');
-export const getLowStockProducts = (threshold = 10) =>
-  request(`/admin/products/low-stock?threshold=${threshold}`);
-export const exportProducts = () => request('/admin/products/export', { method: 'POST' });
+  request(`/admin/spiritual-elements/${id}`, { method: 'DELETE' });
+export const getProductCategories = () => request('/admin/spiritual-elements/categories');
 
 // ─── Subscriptions ───────────────────────────────────────────────
 export const getSubscriptionPlans = () => request('/admin/subscriptions/plans');

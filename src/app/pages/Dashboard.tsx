@@ -304,10 +304,10 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Spiritual Elements */}
+      {/* Products */}
       {stats && (stats.totalHerbs > 0 || stats.totalCrystals > 0) && (
         <div className="rounded-xl border border-[#e1e1e7] bg-white p-6 shadow-sm">
-          <h2 className="mb-6 text-lg font-semibold text-[#090838]">Spiritual Elements</h2>
+          <h2 className="mb-6 text-lg font-semibold text-[#090838]">Products</h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex items-center gap-4 rounded-lg border border-[#e1e1e7] p-4">
               <div className="flex size-14 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-green-600">
@@ -346,16 +346,16 @@ export function Dashboard() {
           Settings
         </button>
         <button
-          onClick={() => navigate("/services")}
+          onClick={() => navigate("/spiritual-elements")}
           className="rounded-lg border border-[#e1e1e7] bg-white p-4 text-center text-sm font-medium text-[#090838] transition-colors hover:border-[#0048ff] hover:bg-blue-50"
         >
-          Services
+          Products
         </button>
         <button
-          onClick={() => navigate("/analytics")}
+          onClick={() => navigate("/posts")}
           className="rounded-lg border border-[#e1e1e7] bg-white p-4 text-center text-sm font-medium text-[#090838] transition-colors hover:border-[#0048ff] hover:bg-blue-50"
         >
-          Analytics
+          Posts
         </button>
       </div>
     </div>
