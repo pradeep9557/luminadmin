@@ -403,13 +403,34 @@ export function SpiritualElements() {
                   <label className="mb-2 block text-sm font-medium text-[#090838]">
                     Product Image URL
                   </label>
-                  <input
-                    type="text"
-                    value={productFormData.image}
-                    onChange={(e) => setProductFormData({ ...productFormData, image: e.target.value })}
-                    placeholder="https://images.unsplash.com/photo-example.jpg"
-                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={productFormData.image}
+                      onChange={(e) => setProductFormData({ ...productFormData, image: e.target.value })}
+                      placeholder="Enter URL or browse to select a file"
+                      className="flex-1 rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                    />
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#0048ff] px-4 py-2 text-sm font-medium text-[#0048ff] hover:bg-blue-50 transition-colors">
+                      <Upload className="size-4" />
+                      Browse
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setProductFormData({ ...productFormData, image: reader.result as string });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                   <p className="mt-1 text-xs text-[#6b6b88]">Leave empty to use default image</p>
                   {productFormData.image && (
                     <div className="mt-3 overflow-hidden rounded-lg border border-[#e1e1e7]">
@@ -559,13 +580,34 @@ export function SpiritualElements() {
               <div className="space-y-4">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#090838]">Product Image URL</label>
-                  <input
-                    type="text"
-                    value={productFormData.image}
-                    onChange={(e) => setProductFormData({ ...productFormData, image: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={productFormData.image}
+                      onChange={(e) => setProductFormData({ ...productFormData, image: e.target.value })}
+                      placeholder="Enter URL or browse to select a file"
+                      className="flex-1 rounded-lg border border-[#e1e1e7] px-4 py-2 focus:border-[#0048ff] focus:outline-none"
+                    />
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#0048ff] px-4 py-2 text-sm font-medium text-[#0048ff] hover:bg-blue-50 transition-colors">
+                      <Upload className="size-4" />
+                      Browse
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setProductFormData({ ...productFormData, image: reader.result as string });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                   {productFormData.image && (
                     <div className="mt-3 overflow-hidden rounded-lg border border-[#e1e1e7]">
                       <img src={productFormData.image} alt="Preview" className="h-48 w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />

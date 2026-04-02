@@ -112,6 +112,8 @@ export const deleteOrder = (id: string) =>
 export const refundOrder = (id: string) =>
   request(`/admin/orders/${id}/refund`, { method: 'POST' });
 export const getOrderTracking = (id: string) => request(`/admin/orders/${id}/tracking`);
+export const updateOrderTracking = (id: string, trackingData: any) =>
+  request(`/admin/orders/${id}/tracking`, { method: 'PATCH', body: JSON.stringify(trackingData) });
 export const bulkUpdateOrderStatus = (data: any) =>
   request('/admin/orders/bulk-update-status', { method: 'POST', body: JSON.stringify(data) });
 export const exportOrders = () => request('/admin/orders/export', { method: 'POST' });
