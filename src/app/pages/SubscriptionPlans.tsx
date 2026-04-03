@@ -9,6 +9,11 @@ import {
   getSubscribers,
   getSubscriptionRevenue,
   getChurnRate,
+  getPaymentGateways,
+  connectPaymentGateway,
+  configurePaymentGateway,
+  disconnectPaymentGateway,
+  testPaymentConnection,
 } from "../api";
 
 interface Plan {
@@ -34,6 +39,7 @@ interface Gateway {
   lastSynced: string;
   logo: string;
   enabled: boolean;
+  _gatewayId?: string;
 }
 
 interface BillingData {
@@ -72,41 +78,14 @@ export function SubscriptionPlans() {
     status: "active" as "active" | "inactive",
   });
 
-  const [gateways, setGateways] = useState<Gateway[]>([
-    {
-      id: 1,
-      name: "Stripe",
-      status: "connected",
-      description: "Accept credit cards, debit cards, and digital wallets globally",
-      apiKey: "sk_live_••••••••••••••4242",
-      environment: "Live",
-      lastSynced: "2 minutes ago",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg",
-      enabled: true,
-    },
-    {
-      id: 2,
-      name: "PayPal",
-      status: "connected",
-      description: "Enable payments through PayPal accounts and cards",
-      apiKey: "AZaQ••••••••••••••••xK3L",
-      environment: "Sandbox",
-      lastSynced: "15 minutes ago",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg",
-      enabled: true,
-    },
-    {
-      id: 3,
-      name: "Razorpay",
-      status: "not-connected",
-      description: "Accept payments in India with UPI, cards, and more",
-      apiKey: "",
-      environment: "",
-      lastSynced: "",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg",
-      enabled: false,
-    },
-  ]);
+  const GATEWAY_DESCRIPTIONS: Record<string, string> = {
+    stripe: "Accept credit cards, debit cards, and digital wallets globally",
+    paypal: "Enable payments through PayPal accounts and cards",
+    razorpay: "Accept payments in India with UPI, cards, and more",
+  };
+
+  const [gateways, setGateways] = useState<Gateway[]>([]);
+  const [gatewaysLoading, setGatewaysLoading] = useState(true);
 
   const [configureModal, setConfigureModal] = useState<Gateway | null>(null);
   const [connectModal, setConnectModal] = useState<Gateway | null>(null);
@@ -172,50 +151,143 @@ export function SubscriptionPlans() {
     fetchBillingData();
   }, []);
 
-  const toggleGateway = (id: number) => {
-    setGateways((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, enabled: !g.enabled } : g))
-    );
+  // Fetch gateways from backend
+  const fetchGateways = async () => {
+    try {
+      setGatewaysLoading(true);
+      const response = await getPaymentGateways();
+      const data = Array.isArray(response) ? response
+        : response.data ? response.data
+        : response.gateways ? response.gateways
+        : [];
+      const mapped: Gateway[] = data.map((g: any, index: number) => ({
+        id: index + 1,
+        name: g.name || g.id,
+        status: g.status === "connected" ? "connected" as GatewayStatus : "not-connected" as GatewayStatus,
+        description: GATEWAY_DESCRIPTIONS[g.id] || `Pay with ${g.name}`,
+        apiKey: g.publicKey || g.secretKey || "",
+        environment: g.environment ? g.environment.charAt(0).toUpperCase() + g.environment.slice(1) : "",
+        lastSynced: g.status === "connected" ? "Synced" : "",
+        logo: g.logo || "",
+        enabled: g.status === "connected",
+        _gatewayId: g.id, // store backend gatewayId for API calls
+      }));
+      setGateways(mapped.length > 0 ? mapped : []);
+    } catch (err) {
+      console.error("Error fetching gateways:", err);
+    } finally {
+      setGatewaysLoading(false);
+    }
   };
 
-  const connectGateway = (gateway: Gateway) => {
-    setGateways((prev) =>
-      prev.map((g) =>
-        g.id === gateway.id
-          ? {
-              ...g,
-              status: "connected",
-              apiKey: `${g.name.toLowerCase()}_test_••••••••••••••1234`,
-              environment: "Sandbox",
-              lastSynced: "Just now",
-              enabled: true,
-            }
-          : g
-      )
-    );
-    setConnectModal(null);
+  useEffect(() => {
+    fetchGateways();
+  }, []);
+
+  // Connect form state
+  const [connectFormData, setConnectFormData] = useState({
+    apiKey: "",
+    secretKey: "",
+    environment: "Sandbox",
+  });
+
+  // Configure form state
+  const [configFormData, setConfigFormData] = useState({
+    apiKey: "",
+    environment: "Live",
+  });
+
+  const toggleGateway = async (id: number) => {
+    const gateway = gateways.find((g) => g.id === id);
+    if (!gateway) return;
+    const gatewayId = gateway._gatewayId || gateway.name.toLowerCase();
+
+    if (gateway.enabled) {
+      // Disconnect
+      try {
+        await disconnectPaymentGateway(gatewayId);
+        await fetchGateways();
+      } catch (err) {
+        alert("Failed to disconnect gateway");
+      }
+    } else {
+      // Show connect modal
+      setConnectFormData({ apiKey: "", secretKey: "", environment: "Sandbox" });
+      setConnectModal(gateway);
+    }
   };
 
-  const disconnectGateway = (id: number) => {
-    setGateways((prev) =>
-      prev.map((g) =>
-        g.id === id
-          ? {
-              ...g,
-              status: "not-connected",
-              apiKey: "",
-              environment: "",
-              lastSynced: "",
-              enabled: false,
-            }
-          : g
-      )
-    );
-    setConfigureModal(null);
+  const handleConnectGateway = async () => {
+    if (!connectModal) return;
+    const gatewayId = connectModal._gatewayId || connectModal.name.toLowerCase();
+
+    if (!connectFormData.apiKey || !connectFormData.secretKey) {
+      alert("Please enter both API key and Secret key");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await connectPaymentGateway(gatewayId, {
+        publicKey: connectFormData.apiKey,
+        secretKey: connectFormData.secretKey,
+        environment: connectFormData.environment.toLowerCase(),
+      });
+      await fetchGateways();
+      setConnectModal(null);
+      setSuccessMessage(`${connectModal.name} connected successfully!`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to connect gateway");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const testPayment = (gateway: Gateway) => {
-    alert(`Testing payment with ${gateway.name}...\n\nTest transaction successful! ✓\nTransaction ID: ${Math.random().toString(36).substring(7).toUpperCase()}`);
+  const handleDisconnectGateway = async (id: number) => {
+    const gateway = gateways.find((g) => g.id === id);
+    if (!gateway) return;
+    const gatewayId = gateway._gatewayId || gateway.name.toLowerCase();
+
+    try {
+      await disconnectPaymentGateway(gatewayId);
+      await fetchGateways();
+      setConfigureModal(null);
+      setSuccessMessage(`${gateway.name} disconnected`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      alert("Failed to disconnect gateway");
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    if (!configureModal) return;
+    const gatewayId = configureModal._gatewayId || configureModal.name.toLowerCase();
+
+    try {
+      setIsSubmitting(true);
+      await configurePaymentGateway(gatewayId, {
+        publicKey: configFormData.apiKey || undefined,
+        environment: configFormData.environment.toLowerCase(),
+      });
+      await fetchGateways();
+      setConfigureModal(null);
+      setSuccessMessage(`${configureModal.name} configuration saved!`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      alert("Failed to save configuration");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const testPayment = async (gateway: Gateway) => {
+    try {
+      const result = await testPaymentConnection();
+      alert(`Testing payment with ${gateway.name}...\n\nTest connection successful! ✓\nConnected gateways: ${result.gateways?.join(", ") || gateway.name}`);
+    } catch {
+      alert(`Test connection failed for ${gateway.name}`);
+    }
     setTestPaymentModal(null);
   };
 
@@ -661,7 +733,13 @@ export function SubscriptionPlans() {
                   </div>
                   <div className="space-y-2">
                     <button
-                      onClick={() => setConfigureModal(gateway)}
+                      onClick={() => {
+                        setConfigFormData({
+                          apiKey: "",
+                          environment: gateway.environment || "Live",
+                        });
+                        setConfigureModal(gateway);
+                      }}
                       className="w-full rounded-lg bg-gradient-to-r from-[#0048ff] to-[#0036cc] px-4 py-2 text-sm font-medium text-white hover:from-[#0036cc] hover:to-[#0024aa]"
                     >
                       Configure
@@ -706,7 +784,10 @@ export function SubscriptionPlans() {
                     <p className="text-sm text-[#6b6b88]">Gateway not connected</p>
                   </div>
                   <button
-                    onClick={() => setConnectModal(gateway)}
+                    onClick={() => {
+                      setConnectFormData({ apiKey: "", secretKey: "", environment: "Sandbox" });
+                      setConnectModal(gateway);
+                    }}
                     className="w-full rounded-lg bg-gradient-to-r from-[#0048ff] to-[#0036cc] px-4 py-2 text-sm font-medium text-white hover:from-[#0036cc] hover:to-[#0024aa]"
                   >
                     Connect {gateway.name}
@@ -733,14 +814,17 @@ export function SubscriptionPlans() {
                   <label className="mb-2 block text-sm font-medium text-[#090838]">API Key</label>
                   <input
                     type="text"
-                    defaultValue={configureModal.apiKey}
+                    value={configFormData.apiKey}
+                    onChange={(e) => setConfigFormData({ ...configFormData, apiKey: e.target.value })}
+                    placeholder="Enter new API key (leave empty to keep current)"
                     className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm focus:border-[#0048ff] focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#090838]">Environment</label>
                   <select
-                    defaultValue={configureModal.environment}
+                    value={configFormData.environment}
+                    onChange={(e) => setConfigFormData({ ...configFormData, environment: e.target.value })}
                     className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm focus:border-[#0048ff] focus:outline-none"
                   >
                     <option value="Sandbox">Sandbox</option>
@@ -751,8 +835,9 @@ export function SubscriptionPlans() {
                   <label className="mb-2 block text-sm font-medium text-[#090838]">Webhook URL</label>
                   <input
                     type="text"
-                    defaultValue={`https://api.luminguide.com/webhooks/${configureModal.name.toLowerCase()}`}
-                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm focus:border-[#0048ff] focus:outline-none"
+                    readOnly
+                    value={`https://api.luminguide.com/webhooks/${configureModal.name.toLowerCase()}`}
+                    className="w-full rounded-lg border border-[#e1e1e7] bg-[#f9fafb] px-4 py-2 text-sm text-[#6b6b88]"
                   />
                 </div>
               </div>
@@ -760,7 +845,7 @@ export function SubscriptionPlans() {
 
             <div className="flex justify-between gap-3 border-t border-[#e1e1e7] p-6">
               <button
-                onClick={() => disconnectGateway(configureModal.id)}
+                onClick={() => handleDisconnectGateway(configureModal.id)}
                 className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
               >
                 Disconnect
@@ -773,13 +858,11 @@ export function SubscriptionPlans() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    alert(`${configureModal.name} configuration saved successfully!`);
-                    setConfigureModal(null);
-                  }}
-                  className="rounded-lg bg-gradient-to-r from-[#0048ff] to-[#0036cc] px-4 py-2 text-sm font-medium text-white hover:from-[#0036cc] hover:to-[#0024aa]"
+                  onClick={handleSaveConfig}
+                  disabled={isSubmitting}
+                  className="rounded-lg bg-gradient-to-r from-[#0048ff] to-[#0036cc] px-4 py-2 text-sm font-medium text-white hover:from-[#0036cc] hover:to-[#0024aa] disabled:opacity-50"
                 >
-                  Save Changes
+                  {isSubmitting ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
@@ -799,9 +882,11 @@ export function SubscriptionPlans() {
             <div className="p-6">
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#090838]">API Key</label>
+                  <label className="mb-2 block text-sm font-medium text-[#090838]">API Key / Public Key</label>
                   <input
                     type="text"
+                    value={connectFormData.apiKey}
+                    onChange={(e) => setConnectFormData({ ...connectFormData, apiKey: e.target.value })}
                     placeholder={`Enter your ${connectModal.name} API key`}
                     className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm focus:border-[#0048ff] focus:outline-none"
                   />
@@ -810,13 +895,19 @@ export function SubscriptionPlans() {
                   <label className="mb-2 block text-sm font-medium text-[#090838]">Secret Key</label>
                   <input
                     type="password"
+                    value={connectFormData.secretKey}
+                    onChange={(e) => setConnectFormData({ ...connectFormData, secretKey: e.target.value })}
                     placeholder="Enter secret key"
                     className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm focus:border-[#0048ff] focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#090838]">Environment</label>
-                  <select className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm focus:border-[#0048ff] focus:outline-none">
+                  <select
+                    value={connectFormData.environment}
+                    onChange={(e) => setConnectFormData({ ...connectFormData, environment: e.target.value })}
+                    className="w-full rounded-lg border border-[#e1e1e7] px-4 py-2 text-sm focus:border-[#0048ff] focus:outline-none"
+                  >
                     <option value="Sandbox">Sandbox (Testing)</option>
                     <option value="Live">Live (Production)</option>
                   </select>
@@ -832,10 +923,11 @@ export function SubscriptionPlans() {
                 Cancel
               </button>
               <button
-                onClick={() => connectGateway(connectModal)}
-                className="rounded-lg bg-gradient-to-r from-[#0048ff] to-[#0036cc] px-4 py-2 text-sm font-medium text-white hover:from-[#0036cc] hover:to-[#0024aa]"
+                onClick={handleConnectGateway}
+                disabled={isSubmitting}
+                className="rounded-lg bg-gradient-to-r from-[#0048ff] to-[#0036cc] px-4 py-2 text-sm font-medium text-white hover:from-[#0036cc] hover:to-[#0024aa] disabled:opacity-50"
               >
-                Connect Gateway
+                {isSubmitting ? "Connecting..." : "Connect Gateway"}
               </button>
             </div>
           </div>
